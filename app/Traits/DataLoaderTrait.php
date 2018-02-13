@@ -5,6 +5,7 @@ namespace App\Traits;
 use Overblog\DataLoader\DataLoader;
 use Overblog\PromiseAdapter\PromiseAdapterInterface;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use \ReflectionClass;
@@ -43,46 +44,59 @@ trait DataLoaderTrait
         return null;
     }
 
-    private function getKeysFromArguments($arguments, $loadType) {
-
+    
+    private function getKeys($arguments, $loadType, Relation $eloquentRelationship = null) {
         if (empty($arguments)) {
-            $keys = $this->getKey();
+            if ($eloquentRelationship instanceof HasMany) {
+                $keys = $this->getKey();
 
-            if ($loadType == self::$LOAD_MANY) {
-                $keys = [$this->getKey()];
+                if ($loadType == self::$LOAD_MANY) {
+                    $keys = [$this->getKey()];
+                }
+            } else if ($eloquentRelationship instanceof BelongsTo) {
+                $keys = $this->{$eloquentRelationship->getForeignKey()};
             }
         } else {
             $keys = $arguments[0]; // this could be and array of int or an int
         }
-
         return $keys;
     }
+
+    private function getDataLoaderFnName($loadType) {
+        return str_replace('batch', '', $loadType);
+    }
+
+    /**
+     * Handles calls to dynamic functions in the following format:
+     *   batch[LOAD_TYPE][DEFINED_ELOQUENT_RELATION_FUNCTION]
+     * 
+     * Limitations: The DEFINED_ELOQUENT_RELATION_FUNCTION must specify the return type
+     * Supported relation types:
+     *  - BelongsTo
+     *  - HasMany
+     */
 
     public function __call($name, $arguments) {
         $name = strtolower($name);
         $relationshipFnName = self::getRelationshipFnName($name);
         $loadType = self::getLoadType($name);
 
-
         if ($name == self::$LOAD || $name == self::$LOAD_MANY) {
 
-            $keys = $this->getKeysFromArguments($arguments, $loadType);
-            $loadType = str_replace('batch', '', $loadType);
-
-            return self::$dataLoader->{$loadType}($keys);
+            $keys = $this->getKeys($arguments, $loadType);
+            return self::$dataLoader->{$this->getDataLoaderFnName($loadType)}($keys);
 
         } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
 
-            $keys = $this->getKeysFromArguments($arguments, $loadType);
-            $loadType = str_replace('batch', '', $loadType);
-            $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];
+            $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];            
+            $keys = $this->getKeys($arguments, $loadType, $eloquentRelationship);
 
             if ($eloquentRelationship instanceof BelongsTo) {
-                $key = $this->{$eloquentRelationship->getForeignKey()};
+                $key = $keys;
                 return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
             }
 
-            return self::$relationDataLoaders[$relationshipFnName]->{$loadType}($keys)
+            return self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($loadType)}($keys)
                         ->then(function($collection) use ($eloquentRelationship) {
                             $collection = $collection[0];
                             $relatedModelInstance = $eloquentRelationship->getRelated();
