@@ -23,49 +23,7 @@ trait DataLoaderTrait
     static private $LOAD_MANY = 'batchloadmany';
     static private $relationshipFnReturnTypeMap = [];
 
-    private static function getRelationshipFnName($name) {
-        $loadType = self::$LOAD_MANY;
-        $relationshipName = str_replace($loadType, '', $name);
-        if ($relationshipName == $name) {
-            $loadType = self::$LOAD;
-            $relationshipName = str_replace($loadType, '', $name);
-        }
-
-        return $relationshipName;
-    }
-
-    private static function getLoadType($name) {
-        if (strpos($name, self::$LOAD_MANY) !== false) {
-            return self::$LOAD_MANY;
-        } elseif (strpos($name, self::$LOAD) !== false) {
-            return self::$LOAD;
-        }
-
-        return null;
-    }
-
     
-    private function getKeys($arguments, $loadType, Relation $eloquentRelationship = null) {
-        if (empty($arguments)) {
-            if ($eloquentRelationship instanceof HasMany) {
-                $keys = $this->getKey();
-
-                if ($loadType == self::$LOAD_MANY) {
-                    $keys = [$this->getKey()];
-                }
-            } else if ($eloquentRelationship instanceof BelongsTo) {
-                $keys = $this->{$eloquentRelationship->getForeignKey()};
-            }
-        } else {
-            $keys = $arguments[0]; // this could be and array of int or an int
-        }
-        return $keys;
-    }
-
-    private function getDataLoaderFnName($loadType) {
-        return str_replace('batch', '', $loadType);
-    }
-
     /**
      * Handles calls to dynamic functions in the following format:
      *   batch[LOAD_TYPE][DEFINED_ELOQUENT_RELATION_FUNCTION]
@@ -109,7 +67,6 @@ trait DataLoaderTrait
                             return $relatedModelDataLoader->loadMany(array_column($collection, $relatedModelInstance->getKeyName()));                            
                         });
         } else {
-            // return is_callable(['parent', '__call']) ? parent::__call($name, $arguments) : null;            
             return parent::__call($name, $arguments);            
         }
 
