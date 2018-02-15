@@ -5,6 +5,7 @@ namespace App\Traits;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait DataLoaderHelpersTrait
 {
@@ -51,6 +52,8 @@ trait DataLoaderHelpersTrait
                 }
             } else if ($eloquentRelationship instanceof BelongsTo) {
                 $keys = $this->{$eloquentRelationship->getForeignKey()};
+            } else if ($eloquentRelationship instanceof BelongsToMany) {
+                $keys = [$this->getKey()];
             }
         } else {
             $keys = $arguments[0]; // this could be and array of int or an int

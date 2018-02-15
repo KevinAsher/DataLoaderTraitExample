@@ -39,17 +39,19 @@ trait DataLoaderTrait
         $name = strtolower($name);
         $relationshipFnName = self::getRelationshipFnName($name);
         $loadType = self::getLoadType($name);
+        
 
         if ($name == self::$LOAD || $name == self::$LOAD_MANY) {
 
             $keys = $this->getKeys($arguments, $loadType);
             return self::$dataLoader->{$this->getDataLoaderFnName($loadType)}($keys);
 
-        } elseif (in_array($$, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
-
-            $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];            
+        } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
+        
+            
+            $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];
             $keys = $this->getKeys($arguments, $loadType, $eloquentRelationship);
-
+            
             if ($eloquentRelationship instanceof BelongsTo) {
                 $key = $keys;
                 return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
@@ -61,11 +63,12 @@ trait DataLoaderTrait
                             $relatedModelInstance = $eloquentRelationship->getRelated();
                             $relatedModelDataLoader = get_class($relatedModelInstance)::$dataLoader;
 
-                            /* Precache all the models. The collection order must be in the same order $keys array. */ 
-                            foreach($collection as $key => $model) {
-                                $relatedModelDataLoader->prime($key, $model);
+                            /* Precache all the models. The collection order must be in the same order of the $keys array. */ 
+                            foreach ($collection as $model) {
+                                /* $model is garanteed not to be null since the relationships use inner joins */
+                                $relatedModelDataLoader->prime($model->getKey(), $model);
                             }
-
+                            
                             return $relatedModelDataLoader->loadMany(array_column($collection, $relatedModelInstance->getKeyName()));                            
                         });
         } else {
@@ -130,7 +133,6 @@ trait DataLoaderTrait
                         $foreignPivotKey = $eloquentRelationship->getQualifiedForeignPivotKeyName();
                         $relatedPivotKey = $eloquentRelationship->getQualifiedRelatedPivotKeyName();
                         $relatedModelInstance = $eloquentRelationship->getRelated();
-                        // dd('yolo');
                         $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), $relatedPivotKey)
                                                                         ->whereIn($foreignPivotKey, $keys)->get();
                         break;

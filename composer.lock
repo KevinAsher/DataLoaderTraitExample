@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6e601b699a1c84a13fa81f25a0bf1de",
+    "content-hash": "dbd2e591684c6d5df90171a587e932cc",
     "packages": [
         {
             "name": "dnoegel/php-xdg-base-dir",
@@ -2397,16 +2397,16 @@
     "packages-dev": [
         {
             "name": "barryvdh/laravel-debugbar",
-            "version": "v3.0.0",
+            "version": "v3.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/barryvdh/laravel-debugbar.git",
-                "reference": "a8f798029783e021f25affab6c34f786983639df"
+                "reference": "01a859752094e00aa8548832312366753272f8af"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/barryvdh/laravel-debugbar/zipball/a8f798029783e021f25affab6c34f786983639df",
-                "reference": "a8f798029783e021f25affab6c34f786983639df",
+                "url": "https://api.github.com/repos/barryvdh/laravel-debugbar/zipball/01a859752094e00aa8548832312366753272f8af",
+                "reference": "01a859752094e00aa8548832312366753272f8af",
                 "shasum": ""
             },
             "require": {
@@ -2461,7 +2461,7 @@
                 "profiler",
                 "webprofiler"
             ],
-            "time": "2017-08-28T20:21:05+00:00"
+            "time": "2017-09-18T13:32:46+00:00"
         },
         {
             "name": "doctrine/instantiator",
