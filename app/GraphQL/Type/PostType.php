@@ -23,11 +23,12 @@ class PostType extends BaseType
     public function fields()
     {
         return [
-            'id'        => ['type' => Type::nonNull(Type::string())],
-            'title'     => ['type' => Type::nonNull(Type::string())],
-            'body'      => ['type' => Type::nonNull(Type::string())],
-            'author'    => ['type' => GraphQL::type('User')],
-            'likes'     => ['type' => Type::int()],  
+            'id'            => ['type' => Type::nonNull(Type::string())],
+            'title'         => ['type' => Type::nonNull(Type::string())],
+            'body'          => ['type' => Type::nonNull(Type::string())],
+            'author'        => ['type' => GraphQL::type('User')],
+            'like_count'    => ['type' => Type::int()],  
+            'likes'         => ['type' => Type::int()],  
         ];
     }
 

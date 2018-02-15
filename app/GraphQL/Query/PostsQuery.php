@@ -31,11 +31,11 @@ class PostsQuery extends Query
     {
         // $fields = $info->getFieldSelection(1);
 
-        $posts = Post::query();
+        // $posts = Post::query();
 
-        if (isset($args['id'])) {
-            $posts->where('id', $args['id']);
-        }
+        // if (isset($args['id'])) {
+        //     $posts->where('id', $args['id']);
+        // }
 
         // if (isset($fields['author'])) {
         //     $posts->with('user');
@@ -45,9 +45,16 @@ class PostsQuery extends Query
         //     $posts->withCount('likes');
         // }
 
+        if (isset($args['id'])) {
+            $result = Post::batchLoadMany([(int)$args['id']])
+            ;
+            // ->then(function ($r) {
+            //     return nullIfArrayEmptyValues($r);
+            // });
+        } else {
+            $result = Post::all();
+        }
 
-        $result = $posts->get();
-
-        return $result->isEmpty() ? null : $result;
+        return $result;
     }
 }

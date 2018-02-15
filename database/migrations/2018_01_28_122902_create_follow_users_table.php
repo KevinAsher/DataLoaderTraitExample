@@ -17,6 +17,8 @@ class CreateFollowUsersTable extends Migration
             $table->integer('follower_id')->unsigned();
             $table->integer('followee_id')->unsigned();
 
+            $table->index(['follower_id', 'followee_id']);
+
             $table->foreign('follower_id')->references('id')->on('users');
             $table->foreign('followee_id')->references('id')->on('users');
         });

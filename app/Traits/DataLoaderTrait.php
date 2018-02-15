@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use \ReflectionClass;
 use \ReflectionMethod;
+use Illuminate\Support\Facades\DB;
 
 trait DataLoaderTrait
 {
@@ -44,7 +45,7 @@ trait DataLoaderTrait
             $keys = $this->getKeys($arguments, $loadType);
             return self::$dataLoader->{$this->getDataLoaderFnName($loadType)}($keys);
 
-        } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
+        } elseif (in_array($$, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
 
             $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];            
             $keys = $this->getKeys($arguments, $loadType, $eloquentRelationship);
@@ -60,8 +61,9 @@ trait DataLoaderTrait
                             $relatedModelInstance = $eloquentRelationship->getRelated();
                             $relatedModelDataLoader = get_class($relatedModelInstance)::$dataLoader;
 
-                            foreach($collection as $model) {
-                                $relatedModelDataLoader->prime($model->getKey(), $model);
+                            /* Precache all the models. The collection order must be in the same order $keys array. */ 
+                            foreach($collection as $key => $model) {
+                                $relatedModelDataLoader->prime($key, $model);
                             }
 
                             return $relatedModelDataLoader->loadMany(array_column($collection, $relatedModelInstance->getKeyName()));                            
@@ -120,20 +122,29 @@ trait DataLoaderTrait
                 switch ($relationName) {
                     case 'hasmany':
                         $keyName = $eloquentRelationship->getForeignKeyName();
+                        $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
+                        break;
+                    case 'belongstomany':
+                        $keyName = $eloquentRelationship->getForeignPivotKeyName();
+                        $pivotTable = $eloquentRelationship->getTable();
+                        $foreignPivotKey = $eloquentRelationship->getQualifiedForeignPivotKeyName();
+                        $relatedPivotKey = $eloquentRelationship->getQualifiedRelatedPivotKeyName();
+                        $relatedModelInstance = $eloquentRelationship->getRelated();
+                        // dd('yolo');
+                        $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), $relatedPivotKey)
+                                                                        ->whereIn($foreignPivotKey, $keys)->get();
                         break;
                     default:
                         throw new \Exception("$relationName not supported", 1);
                         break;
                 }
 
-                $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
+                
                 $collection = self::orderManyPerKey($collection, $keys, $keyName);
             } else {
                 $collection = static::find($keys);
-                if ($collection->isNotEmpty()) {
-                    $keyName = $collection->first()->getKeyName();
-                    $collection = self::orderOnePerKey($collection, $keys, $keyName);               
-                }
+                $keyName = $collection->isNotEmpty() ? $collection->first()->getKeyName() : null;
+                $collection = self::orderOnePerKey($collection, $keys, $keyName);               
             }
 
             return self::$promiseAdapter->createFulfilled($collection);
@@ -178,7 +189,7 @@ trait DataLoaderTrait
         foreach ($keys as $key) {
             $sorted[$key] = $collection->where($keyName, $key)->first();
         }
-
+        
         return array_values($sorted);
     }
 }
