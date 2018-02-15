@@ -65,7 +65,7 @@ trait DataLoaderTrait
 
                             /* Precache all the models. The collection order must be in the same order of the $keys array. */ 
                             foreach ($collection as $model) {
-                                /* $model is garanteed not to be null since the relationships use inner joins */
+                                /* $model should be garanteed not to be null since the relationships use inner joins */
                                 $relatedModelDataLoader->prime($model->getKey(), $model);
                             }
                             
