@@ -24,15 +24,16 @@ trait DataLoaderTrait
     static private $LOAD_MANY = 'batchloadmany';
     static private $relationshipFnReturnTypeMap = [];
 
-    
+
     /**
      * Handles calls to dynamic functions in the following format:
      *   batch[LOAD_TYPE][DEFINED_ELOQUENT_RELATION_FUNCTION]
      * 
      * Limitations: The DEFINED_ELOQUENT_RELATION_FUNCTION must specify the return type
      * Supported relation types:
-     *  - BelongsTo
-     *  - HasMany
+     *  - HasMany   (one to many)
+     *  - BelongsTo (one to many inverse)
+     *  - BelongsToMany (many to many & inverse)
      */
 
     public function __call($name, $arguments) {
@@ -112,7 +113,7 @@ trait DataLoaderTrait
      * 
      * @param  \Illuminate\Database\Eloquent\Relations\Relation|null $eloquentRelationship
      * @param  string|null  $relationName
-     * @return function   
+     * @return \Closure   
      */
 
     private static function buildBatchLoadFn(Relation $eloquentRelationship = null, $relationName = null) 
@@ -193,5 +194,21 @@ trait DataLoaderTrait
         }
         
         return array_values($sorted);
+    }
+
+    /**
+     * Loader creator helper.
+     * 
+     * @param  \Closure  $batchLoadFn
+     * @param  string  $keyName
+     * @return \Overblog\DataLoader\DataLoader
+     */
+
+    protected static function createLoader($batchLoadFn, $keyName) {
+        return new DataLoader(function($keys) use ($batchLoadFn, $keyName) {
+            $collection = $batchLoadFn($keys);
+
+            return self::$promiseAdapter->createFulfilled(self::orderManyPerKey($collection, $keys, $keyName));
+        }, self::$promiseAdapter);
     }
 }

@@ -52,12 +52,5 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton('PromiseAdapter', function () {
             return $this->graphQLPromiseAdapter;
         });
-
-        $this->app->singleton(UserLoader::class);
-        $this->app->singleton(PostLoader::class);
-        $this->app->singleton(LikeLoader::class);
-        $this->app->singleton(AuthorLoader::class);
-        $this->app->singleton(UserPostsLoader::class);
-        $this->app->singleton(PostLikesCount::class);
     }
 }

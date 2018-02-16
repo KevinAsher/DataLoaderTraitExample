@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
-use Overblog\DataLoader\DataLoader;
+use App\Traits\DataLoaderTrait;
 
 class User extends Model
 {
-    use Traits\DataLoaderTrait;
+    use DataLoaderTrait;
 
     protected $guarded = [];
     

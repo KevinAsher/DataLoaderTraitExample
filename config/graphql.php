@@ -128,7 +128,7 @@ return [
                 'posts' => 'App\GraphQL\Query\PostsQuery',
             ],
             'mutation' => [
-
+                'createUser' => 'App\Graphql\Mutation\CreateUserMutation'
             ]
         ]
     ],
