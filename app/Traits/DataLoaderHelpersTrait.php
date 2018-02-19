@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 
 trait DataLoaderHelpersTrait
 {
-    public static function getModelClassOwnMethods() {
+    public static function getModelClassOwnMethods()
+    {
         $model = new static();
 
         return array_filter(get_class_methods($model), function ($method) {
@@ -65,6 +67,23 @@ trait DataLoaderHelpersTrait
     private function getDataLoaderFnName($loadType)
     {
         return str_replace('batch', '', $loadType);
+    }
+
+    /**
+     * Monkey patch function. Function was renamed from getPlainForeignKey to getForeignKeyName.
+     * Commit: https://github.com/laravel/framework/commit/294c006288ee182eeddf3c6deb23a35032a9219d#diff-c0acf9e1f52186e33654e8b466773f77
+     * 
+     * @param  Illuminate\Database\Eloquent\Relations\HasOneOrMany $relation
+     * @return string
+     */
+
+    private static function getForeignKeyName(HasOneOrMany $relation)
+    {
+        if (method_exists($relation, 'getPlainForeignKey')) {
+            return $relation->getPlainForeignKey();
+        } else {
+            return $relation->getForeignKeyName();
+        }
     }
 
 }

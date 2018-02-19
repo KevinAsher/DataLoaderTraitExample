@@ -8,12 +8,6 @@ use Illuminate\Support\Facades\Schema;
 use GraphQL\GraphQL;
 use Overblog\DataLoader\Promise\Adapter\Webonyx\GraphQL\SyncPromiseAdapter;
 use Overblog\PromiseAdapter\Adapter\WebonyxGraphQLSyncPromiseAdapter;
-use App\DataLoader\UserLoader;
-use App\DataLoader\AuthorLoader;
-use App\DataLoader\LikeLoader;
-use App\DataLoader\PostLoader;
-use App\DataLoader\UserPostsLoader;
-use App\DataLoader\PostLikesCount;
 
 class AppServiceProvider extends ServiceProvider
 {
