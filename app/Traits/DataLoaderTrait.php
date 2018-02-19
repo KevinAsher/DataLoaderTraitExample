@@ -35,6 +35,7 @@ trait DataLoaderTrait
      *  - HasMany   (one to many)
      *  - BelongsTo (one to many inverse)
      *  - BelongsToMany (many to many & inverse)
+     *  - HasOne (one to one)
      */
 
     public function __call($name, $arguments) {
