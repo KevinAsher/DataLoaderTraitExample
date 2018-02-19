@@ -5,11 +5,8 @@ namespace App\GraphQL\Type;
 use GraphQL\Type\Definition\Type;
 use Folklore\GraphQL\Support\Type as GraphQLType;
 use GraphQL;
-
-use Facades\App\DataLoader\PostLoader;
-use Facades\App\DataLoader\UserLoader;
-use Facades\App\DataLoader\UserPostsLoader;
 use App\User;
+use GraphQL\Type\Definition\ResolveInfo;
 
 class UserType extends GraphQLType
 {
@@ -27,31 +24,31 @@ class UserType extends GraphQLType
 
     public function fields()
     {
-        return [
-            'id' => ['type' => Type::nonNull(Type::string())],
-            'email' => [
-                'type' => Type::string(),
-                'description' => 'The email of user'
-            ],
-            'name' => [
-                'type' => Type::string(),
-            ],
-            'posts' => ['name' => 'posts', 'type' => Type::listOf(GraphQL::type('Post'))],
-            'followers' => [
-                'type' => Type::listOf(GraphQL::type('User')),
-                // 'type' => Type::string(),
-            ],
-            'followees' => ['type' => Type::listOf(GraphQL::type('User'))],
-
+        $fieldArr = [
+            'id'        => Type::nonNull(Type::string()),
+            'email'     => Type::string(),
+            'name'      => Type::string(),
+            'phone'     => ['type' => GraphQL::type('Phone')],
+            'posts'     => ['type' => Type::listOf(GraphQL::type('Post'))],
+            'followers' => ['type' => Type::listOf(GraphQL::type('User'))],
+            'followees' => ['type' => Type::listOf(GraphQL::type('User'))]
         ];
+
+        return formatGraphqlFields($fieldArr, [$this, 'resolveField']);
+    }
+
+    public function resolveField($root, $args, $context, ResolveInfo $info) 
+    {
+        clock($root, $args, $context, $info->fieldName);
+        return $root->{$info->fieldName};
     }
 
     // If you want to resolve the field yourself, you can declare a method
     // with the following format resolve[FIELD_NAME]Field()
-    protected function resolveEmailField($root, $args)
-    {
-        return $root->email;
-    }
+    // protected function resolveEmailField($root, $args)
+    // {
+    //     return $root->email;
+    // }
 
     protected function resolvePostsField($root, $args)
     {
@@ -67,5 +64,10 @@ class UserType extends GraphQLType
     protected function resolveFolloweesField($root, $args)
     {
         return $root->batchLoadManyFollowees();
+    }
+
+    protected function resolvePhoneField($root, $args)
+    {
+        return $root->batchLoadPhone();
     }
 }

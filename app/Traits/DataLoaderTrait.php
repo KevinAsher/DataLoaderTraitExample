@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use \ReflectionClass;
 use \ReflectionMethod;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait DataLoaderTrait
 {
@@ -58,20 +59,24 @@ trait DataLoaderTrait
                 return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
             }
 
-            return self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($loadType)}($keys)
-                        ->then(function($collection) use ($eloquentRelationship) {
-                            $collection = $collection[0];
-                            $relatedModelInstance = $eloquentRelationship->getRelated();
-                            $relatedModelDataLoader = get_class($relatedModelInstance)::$dataLoader;
+            $promise = self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($loadType)}($keys);
+            if ($eloquentRelationship instanceOf HasMany || $eloquentRelationship instanceOf BelongsToMany) {
+                $promise = $promise->then(function ($collection) use ($eloquentRelationship) {
+                    $collection = $collection[0];
+                    $relatedModelInstance = $eloquentRelationship->getRelated();
+                    $relatedModelDataLoader = get_class($relatedModelInstance)::$dataLoader;
 
-                            /* Precache all the models. The collection order must be in the same order of the $keys array. */ 
-                            foreach ($collection as $model) {
-                                /* $model should be garanteed not to be null since the relationships use inner joins */
-                                $relatedModelDataLoader->prime($model->getKey(), $model);
-                            }
-                            
-                            return $relatedModelDataLoader->loadMany(array_column($collection, $relatedModelInstance->getKeyName()));                            
-                        });
+                    /* Precache all the models. The collection order must be in the same order of the $keys array. */
+                    foreach ($collection as $model) {
+                        /* $model should be garanteed not to be null since the relationships use inner joins */
+                        $relatedModelDataLoader->prime($model->getKey(), $model);
+                    }
+
+                    return $relatedModelDataLoader->loadMany(array_column($collection, $relatedModelInstance->getKeyName()));
+                });
+            }
+
+            return $promise;
         } else {
             return parent::__call($name, $arguments);            
         }
@@ -124,9 +129,15 @@ trait DataLoaderTrait
 
             if ($eloquentRelationship && $relationName) {
                 switch ($relationName) {
+                    case 'hasone':
+                        $keyName = $eloquentRelationship->getForeignKeyName();
+                        $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
+                        $collection = self::orderOnePerKey($collection, $keys, $keyName);
+                        break;
                     case 'hasmany':
                         $keyName = $eloquentRelationship->getForeignKeyName();
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
+                        $collection = self::orderManyPerKey($collection, $keys, $keyName);
                         break;
                     case 'belongstomany':
                         $keyName = $eloquentRelationship->getForeignPivotKeyName();
@@ -136,14 +147,13 @@ trait DataLoaderTrait
                         $relatedModelInstance = $eloquentRelationship->getRelated();
                         $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), $relatedPivotKey)
                                                                         ->whereIn($foreignPivotKey, $keys)->get();
+                        $collection = self::orderManyPerKey($collection, $keys, $keyName);
+                                                                        
                         break;
                     default:
                         throw new \Exception("$relationName not supported", 1);
                         break;
                 }
-
-                
-                $collection = self::orderManyPerKey($collection, $keys, $keyName);
             } else {
                 $collection = static::find($keys);
                 $keyName = $collection->isNotEmpty() ? $collection->first()->getKeyName() : null;

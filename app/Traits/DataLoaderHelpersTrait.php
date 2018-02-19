@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 trait DataLoaderHelpersTrait
 {
@@ -44,7 +45,7 @@ trait DataLoaderHelpersTrait
     private function getKeys($arguments, $loadType, Relation $eloquentRelationship = null)
     {
         if (empty($arguments)) {
-            if ($eloquentRelationship instanceof HasMany) {
+            if ($eloquentRelationship instanceof HasMany || $eloquentRelationship instanceof HasOne) {
                 $keys = $this->getKey();
 
                 if ($loadType == self::$LOAD_MANY) {

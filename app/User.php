@@ -7,12 +7,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 use App\Traits\DataLoaderTrait;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Model
 {
     use DataLoaderTrait;
 
     protected $guarded = [];
+
+    public function phone() : HasOne
+    {
+        return $this->hasOne('App\Phone');
+    }
     
     public function posts() : HasMany
     {

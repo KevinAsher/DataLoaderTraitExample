@@ -152,6 +152,7 @@ return [
     'types' => [
         'User' => 'App\GraphQL\Type\UserType',
         'Post' => 'App\GraphQL\Type\PostType',
+        'Phone' => 'App\GraphQL\Type\PhoneType',
     ],
 
     /*

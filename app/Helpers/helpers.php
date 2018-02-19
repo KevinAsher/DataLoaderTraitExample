@@ -12,3 +12,20 @@ function firstOrNull($arr) {
     
     return reset($arr);
 }
+
+function formatGraphqlFields($arr, $defaultResolver = null) {
+    return array_map(function ($el) {
+        if (is_array($el)) {
+            return $el;
+        }
+
+        $newEl = ['type' => $el];
+
+        if (isset($defaultResolver)) {
+            $newEl['resolve'] = $defaultResolver;
+        }
+
+        return $newEl;
+    }, $arr);
+
+}
