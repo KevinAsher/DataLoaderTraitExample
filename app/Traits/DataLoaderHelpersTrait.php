@@ -77,7 +77,7 @@ trait DataLoaderHelpersTrait
      * @return string
      */
 
-    private static function getForeignKeyName(HasOneOrMany $relation)
+    private static function getForeignKeyName(Relation $relation)
     {
         if (method_exists($relation, 'getPlainForeignKey')) {
             return $relation->getPlainForeignKey();
