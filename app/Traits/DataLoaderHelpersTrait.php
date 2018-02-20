@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Traits;
+namespace App\Graphql;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -47,14 +47,17 @@ trait DataLoaderHelpersTrait
     private function getKeys($arguments, $loadType, Relation $eloquentRelationship = null)
     {
         if (empty($arguments)) {
-            if ($eloquentRelationship instanceof HasMany || $eloquentRelationship instanceof HasOne) {
-                $keys = $this->getKey();
+            if ($eloquentRelationship instanceof HasMany) {
+                $keys = $this->getKey(); // why do we have this again
 
                 if ($loadType == self::$LOAD_MANY) {
                     $keys = [$this->getKey()];
                 }
+
+            } else if ($eloquentRelationship instanceof HasOne) {
+                $keys = $this->{self::getParentKeyName($eloquentRelationship)};
             } else if ($eloquentRelationship instanceof BelongsTo) {
-                $keys = $this->{$eloquentRelationship->getForeignKey()};
+                $keys = $this->{self::getForeignKeyName($eloquentRelationship)};
             } else if ($eloquentRelationship instanceof BelongsToMany) {
                 $keys = [$this->getKey()];
             }
@@ -132,5 +135,23 @@ trait DataLoaderHelpersTrait
         } else {
             return $relation->getOtherKey();
         }
+    }
+
+    /**
+     * Monkey patch function. Some relations return the format "table.column" instead of just the column.
+     * This fn guarantees just the column is returned.
+     * 
+     * @param  Illuminate\Database\Eloquent\Relations\BelongsToMany $relation
+     * @return string
+     */
+
+    private static function getForeignKey(Relation $relation)
+    {
+        return array_pop(explode('.', $relation->getForeignKey()));
+    }
+
+    private static function getParentKeyName(HasOne $relation)
+    {
+        return array_pop(explode('.', $relation->getQualifiedParentKeyName()));
     }
 }
