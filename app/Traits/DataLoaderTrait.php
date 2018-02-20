@@ -111,9 +111,10 @@ trait DataLoaderTrait
 
                 self::$relationshipFnReturnTypeMap[$method] = $eloquentRelationship;
                 self::$relationDataLoaders[$method] = new DataLoader(self::buildBatchLoadFn($eloquentRelationship, $fnRelationType), self::$promiseAdapter);
-                self::$dataLoader = new DataLoader(self::buildBatchLoadFn(), self::$promiseAdapter);
             }
         }
+
+        self::$dataLoader = new DataLoader(self::buildBatchLoadFn(), self::$promiseAdapter);        
     }
 
 
@@ -149,7 +150,7 @@ trait DataLoaderTrait
                         $foreignPivotKey = self::getQualifiedForeignPivotKeyName($eloquentRelationship);
                         $relatedPivotKey = self::getQualifiedRelatedPivotKeyName($eloquentRelationship);
                         $relatedModelInstance = $eloquentRelationship->getRelated();
-                        $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), '=', $relatedPivotKey)
+                        $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), '=',  $relatedPivotKey)
                             ->whereIn($foreignPivotKey, $keys)->get();
                         $collection = self::orderManyPerKey($collection, $keys, $keyName);
 
