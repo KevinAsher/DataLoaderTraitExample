@@ -27,7 +27,6 @@ class PostType extends BaseType
             'title'         => ['type' => Type::nonNull(Type::string())],
             'body'          => ['type' => Type::nonNull(Type::string())],
             'author'        => ['type' => GraphQL::type('User')],
-            'like_count'    => ['type' => Type::int()],  
             'likes'         => ['type' => Type::int()],  
         ];
     }

@@ -53,17 +53,17 @@ class UserType extends GraphQLType
     protected function resolvePostsField($root, $args)
     {
         // return UserLoader::loadPosts($root->id);
-        return $root->batchLoadManyPosts();
+        return $root->batchLoadPosts();
     }
 
     protected function resolveFollowersField($root, $args)
     {
-       return $root->batchLoadManyFollowers();
+       return $root->batchLoadFollowers();
     }
 
     protected function resolveFolloweesField($root, $args)
     {
-        return $root->batchLoadManyFollowees();
+        return $root->batchLoadFollowees();
     }
 
     protected function resolvePhoneField($root, $args)

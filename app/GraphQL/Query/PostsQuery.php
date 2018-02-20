@@ -46,8 +46,7 @@ class PostsQuery extends Query
         // }
 
         if (isset($args['id'])) {
-            $result = Post::batchLoadMany([(int)$args['id']])
-            ;
+            $result = Post::batchLoad([ (int) $args['id'] ]);
             // ->then(function ($r) {
             //     return nullIfArrayEmptyValues($r);
             // });

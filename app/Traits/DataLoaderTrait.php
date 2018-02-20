@@ -44,17 +44,17 @@ trait DataLoaderTrait
     {
         $name = strtolower($name);
         $relationshipFnName = self::getRelationshipFnName($name);
-
+        
         if (empty($relationshipFnName)) {
             
             $keys = $this->getKeys($arguments);
             return self::$dataLoader->{$this->getDataLoaderFnName($keys)}($keys);
 
         } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders))) {
-
             $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];
+            
             $keys = $this->getKeys($arguments, $eloquentRelationship);
-
+            
             $promise = self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($keys)}($keys);
             if ($eloquentRelationship instanceof HasMany || $eloquentRelationship instanceof BelongsToMany) {
                 $promise = $promise->then(function ($collection) use ($eloquentRelationship) {
@@ -87,10 +87,7 @@ trait DataLoaderTrait
     {
         self::$promiseAdapter = app()->make(PromiseAdapterInterface::class);
         $model = new static();
-        $relations = [
-            'hasmany', 'hasmanythrough', 'belongstomany', 'hasone', 'belongsto', 'morphone', 'morphto', 'morphmany',
-            'morphtomany'
-        ];
+        $relations = ['hasmany', 'belongstomany', 'hasone', 'belongsto'];
 
         foreach (self::getModelClassOwnMethods() as $method) {
             $reflectionMethod = new ReflectionMethod(static::class, $method);
@@ -129,23 +126,22 @@ trait DataLoaderTrait
             if ($eloquentRelationship && $relationName) {
                 switch ($relationName) {
                     case 'belongsto':
-                        $key = $keys;
-                        return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
+                        return get_class($eloquentRelationship->getRelated())::$dataLoader->loadMany($keys);
                     case 'hasone':
-                        $keyName = self::getForeignKeyName($eloquentRelationship);
+                        $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
                         $collection = self::orderOnePerKey($collection, $keys, $keyName);
                         break;
                     case 'hasmany':
-                        $keyName = self::getForeignKeyName($eloquentRelationship);
+                        $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
                         $collection = self::orderManyPerKey($collection, $keys, $keyName);
                         break;
                     case 'belongstomany':
-                        $keyName = self::getForeignPivotKeyName($eloquentRelationship);
+                        $keyName = self::getBelongsToManyForeignKey($eloquentRelationship);
                         $pivotTable = $eloquentRelationship->getTable();
-                        $foreignPivotKey = self::getQualifiedForeignPivotKeyName($eloquentRelationship);
-                        $relatedPivotKey = self::getQualifiedRelatedPivotKeyName($eloquentRelationship);
+                        $foreignPivotKey = self::getBelongsToManyQualifiedForeignPivotKeyName($eloquentRelationship);
+                        $relatedPivotKey = self::getBelongsToManyQualifiedRelatedPivotKeyName($eloquentRelationship);
                         $relatedModelInstance = $eloquentRelationship->getRelated();
                         $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), '=',  $relatedPivotKey)
                             ->whereIn($foreignPivotKey, $keys)->get();

@@ -22,24 +22,25 @@ trait DataLoaderHelpersTrait
 
     private static function getRelationshipFnName($name)
     {
-        return str_replace('batchLoad', '', $name);
+        return str_replace('batchload', '', $name);
     }
 
     private function getKeys($arguments, Relation $eloquentRelationship = null)
     {
         if (empty($arguments)) {
             if ($eloquentRelationship instanceof HasMany) {
-                $keys = [$this->getKey()];
-            } else if ($eloquentRelationship instanceof HasOne) {
-                $keys = $this->{self::getParentKeyName($eloquentRelationship)};
-            } else if ($eloquentRelationship instanceof BelongsTo) {
-                $keys = $this->{self::getForeignKeyName($eloquentRelationship)};
-            } else if ($eloquentRelationship instanceof BelongsToMany) {
-                $keys = [$this->getKey()];
+                $keys = [ $this->{self::getHasOneOrManyParentKeyName($eloquentRelationship)} ];
+            } elseif ($eloquentRelationship instanceof HasOne) {
+                $keys = $this->{self::getHasOneOrManyParentKeyName($eloquentRelationship)};
+            } elseif ($eloquentRelationship instanceof BelongsTo) {
+                $keys = $this->{self::getBelongsToForeignKey($eloquentRelationship)};
+            } elseif ($eloquentRelationship instanceof BelongsToMany) {
+                $keys = [ $this->getKey() ];
             }
         } else {
             $keys = $arguments[0]; // this could be and array of int or an int
         }
+
         return $keys;
     }
 
@@ -52,18 +53,18 @@ trait DataLoaderHelpersTrait
     }
 
     /**
-     * Monkey patch function. Function was renamed from getPlainForeignKey to getForeignKeyName.
-     * Commit: https://github.com/laravel/framework/commit/294c006288ee182eeddf3c6deb23a35032a9219d#diff-c0acf9e1f52186e33654e8b466773f77
+     * Wrapper function. From laravel 5.3 to 5.4, a function was renamed.
      * 
      * @param  Illuminate\Database\Eloquent\Relations\HasOneOrMany $relation
      * @return string
      */
 
-    private static function getForeignKeyName(Relation $relation)
+    private static function getHasOneOrManyForeignKeyName(HasOneOrMany $relation)
     {
         if (method_exists($relation, 'getPlainForeignKey')) {
             return $relation->getPlainForeignKey();
         } else {
+            // for laravel 5.4+
             return $relation->getForeignKeyName();
         }
     }
@@ -75,14 +76,19 @@ trait DataLoaderHelpersTrait
      * @return string
      */
 
-    private static function getForeignPivotKeyName(BelongsToMany $relation)
-    {
-        if (method_exists($relation, 'getForeignPivotKeyName')) {
-            return $relation->getForeignPivotKeyName();
-        } else {
-            return explode('.', $relation->getForeignKey())[1];
-        }
-    }
+    // private static function compatibleGetForeignPivotKeyName(BelongsToMany $relation)
+    // {
+    //     if (method_exists($relation, 'getForeignPivotKeyName')) {
+    //         // laravel 5.5+
+    //         return $relation->getForeignPivotKeyName();
+    //     } elseif (method_exists($relation, 'getQualifiedForeignKeyName')) {
+    //         // laravel 5.4
+    //         return explode('.', $relation->getQualifiedForeignKeyName())[1];
+    //     } else {
+    //         // laravel 5.2 - 5.3
+    //         return explode('.', $relation->getForeignKey())[1];
+    //     }
+    // }
 
     /**
      * Monkey patch function. Function didn't exist in older versions of laravel 5.
@@ -91,11 +97,16 @@ trait DataLoaderHelpersTrait
      * @return string
      */
 
-    private static function getQualifiedForeignPivotKeyName(BelongsToMany $relation)
+    private static function getBelongsToManyQualifiedForeignPivotKeyName(BelongsToMany $relation)
     {
         if (method_exists($relation, 'getQualifiedForeignPivotKeyName')) {
+            // laravel 5.5+
             return $relation->getQualifiedForeignPivotKeyName();
+        } elseif (method_exists($relation, 'getQualifiedForeignKeyName')) {
+            // laravel 5.4
+            return $relation->getQualifiedForeignKeyName();
         } else {
+            // laravel 5.2 - 5.3
             return $relation->getForeignKey();
         }
     }
@@ -107,30 +118,46 @@ trait DataLoaderHelpersTrait
      * @return string
      */
 
-    private static function getQualifiedRelatedPivotKeyName(BelongsToMany $relation)
+    private static function getBelongsToManyQualifiedRelatedPivotKeyName(BelongsToMany $relation)
     {
         if (method_exists($relation, 'getQualifiedRelatedPivotKeyName')) {
+            // laravel 5.5+
             return $relation->getQualifiedRelatedPivotKeyName();
+        } elseif (method_exists($relation, 'getQualifiedRelatedKeyName')) {
+            // laravel 5.4
+            return $relation->getQualifiedRelatedKeyName();            
         } else {
+            // laravel 5.2 - 5.3
             return $relation->getOtherKey();
         }
     }
 
-    /**
-     * Monkey patch function. Some relations return the format "table.column" instead of just the column.
-     * This fn guarantees just the column is returned.
-     * 
-     * @param  Illuminate\Database\Eloquent\Relations\BelongsToMany $relation
-     * @return string
-     */
 
-    private static function getForeignKey(Relation $relation)
+
+    private static function getHasOneOrManyParentKeyName(HasOneOrMany $relation)
     {
-        return array_pop(explode('.', $relation->getForeignKey()));
+        // laravel 5.2+
+        return last(explode('.', $relation->getQualifiedParentKeyName()));
     }
 
-    private static function getParentKeyName(HasOne $relation)
+    private static function getBelongsToForeignKey(BelongsTo $relation)
     {
-        return array_pop(explode('.', $relation->getQualifiedParentKeyName()));
+        // laravel 5.2+
+        return $relation->getForeignKey();
+    }
+
+    private static function getBelongsToManyForeignKey(BelongsToMany $relation)
+    {
+        if (method_exists($relation, 'getForeignKey')) {
+            // laravel 5.2 - 5.3        
+            return last(explode('.', $relation->getForeignKey()));
+        } elseif (method_exists($relation, 'getQualifiedForeignKeyName')) {
+            // laravel 5.4
+            return last(explode('.', $relation->getQualifiedForeignKeyName()));
+        } else {
+            // laravel 5.5+
+            clock($relation->getForeignPivotKeyName());
+            return $relation->getForeignPivotKeyName();
+        }        
     }
 }

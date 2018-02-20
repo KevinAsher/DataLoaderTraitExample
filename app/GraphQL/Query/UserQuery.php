@@ -63,7 +63,7 @@ class UserQuery extends Query
         // var_dump('inside resolver of UsersQuery');
         
         if (isset($args['id']))
-            return User::batchLoadMany([(int)$args['id']]);
+            return User::batchLoad([ (int) $args['id'] ]);
         else 
             return \App\User::all();
         // return User::batchLoad((int)$args['id']);
