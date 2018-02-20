@@ -38,11 +38,12 @@ trait DataLoaderTrait
      *  - HasOne (one to one)
      */
 
-    public function __call($name, $arguments) {
+    public function __call($name, $arguments)
+    {
         $name = strtolower($name);
         $relationshipFnName = self::getRelationshipFnName($name);
         $loadType = self::getLoadType($name);
-        
+
 
         if ($name == self::$LOAD || $name == self::$LOAD_MANY) {
 
@@ -50,18 +51,18 @@ trait DataLoaderTrait
             return self::$dataLoader->{$this->getDataLoaderFnName($loadType)}($keys);
 
         } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
-        
-            
+
+
             $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];
             $keys = $this->getKeys($arguments, $loadType, $eloquentRelationship);
-            
+
             if ($eloquentRelationship instanceof BelongsTo) {
                 $key = $keys;
                 return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
             }
 
             $promise = self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($loadType)}($keys);
-            if ($eloquentRelationship instanceOf HasMany || $eloquentRelationship instanceOf BelongsToMany) {
+            if ($eloquentRelationship instanceof HasMany || $eloquentRelationship instanceof BelongsToMany) {
                 $promise = $promise->then(function ($collection) use ($eloquentRelationship) {
                     $collection = $collection[0];
                     $relatedModelInstance = $eloquentRelationship->getRelated();
@@ -79,7 +80,7 @@ trait DataLoaderTrait
 
             return $promise;
         } else {
-            return parent::__call($name, $arguments);            
+            return parent::__call($name, $arguments);
         }
 
     }
@@ -92,8 +93,10 @@ trait DataLoaderTrait
     {
         self::$promiseAdapter = app()->make(PromiseAdapterInterface::class);
         $model = new static();
-        $relations = ['hasmany','hasmanythrough' ,'belongstomany' ,'hasone' ,'belongsto' ,'morphone' ,'morphto' ,'morphmany' ,
-            'morphtomany'];
+        $relations = [
+            'hasmany', 'hasmanythrough', 'belongstomany', 'hasone', 'belongsto', 'morphone', 'morphto', 'morphmany',
+            'morphtomany'
+        ];
 
         foreach (self::getModelClassOwnMethods() as $method) {
             $reflectionMethod = new ReflectionMethod(static::class, $method);
@@ -102,7 +105,7 @@ trait DataLoaderTrait
                 $fnRelationType = strtolower($fnRelationType);
 
                 if (!in_array($fnRelationType, $relations)) continue;
-                
+
                 $eloquentRelationship = $reflectionMethod->invoke($model);
                 $method = strtolower($method);
 
@@ -122,7 +125,7 @@ trait DataLoaderTrait
      * @return \Closure   
      */
 
-    private static function buildBatchLoadFn(Relation $eloquentRelationship = null, $relationName = null) 
+    private static function buildBatchLoadFn(Relation $eloquentRelationship = null, $relationName = null)
     {
         return function ($keys) use ($eloquentRelationship, $relationName) {
 
@@ -131,12 +134,12 @@ trait DataLoaderTrait
             if ($eloquentRelationship && $relationName) {
                 switch ($relationName) {
                     case 'hasone':
-                        $keyName = $eloquentRelationship->getForeignKeyName();
+                        $keyName = self::getForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
                         $collection = self::orderOnePerKey($collection, $keys, $keyName);
                         break;
                     case 'hasmany':
-                        $keyName = $eloquentRelationship->getForeignKeyName();
+                        $keyName = self::getForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
                         $collection = self::orderManyPerKey($collection, $keys, $keyName);
                         break;
@@ -147,9 +150,9 @@ trait DataLoaderTrait
                         $relatedPivotKey = $eloquentRelationship->getQualifiedRelatedPivotKeyName();
                         $relatedModelInstance = $eloquentRelationship->getRelated();
                         $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), $relatedPivotKey)
-                                                                        ->whereIn($foreignPivotKey, $keys)->get();
+                            ->whereIn($foreignPivotKey, $keys)->get();
                         $collection = self::orderManyPerKey($collection, $keys, $keyName);
-                                                                        
+
                         break;
                     default:
                         throw new \Exception("$relationName not supported", 1);
@@ -157,8 +160,8 @@ trait DataLoaderTrait
                 }
             } else {
                 $collection = static::find($keys);
-                $keyName = $collection->isNotEmpty() ? $collection->first()->getKeyName() : null;
-                $collection = self::orderOnePerKey($collection, $keys, $keyName);               
+                $keyName = (!$collection->isEmpty()) ? $collection->first()->getKeyName() : null;
+                $collection = self::orderOnePerKey($collection, $keys, $keyName);
             }
 
             return self::$promiseAdapter->createFulfilled($collection);
@@ -176,7 +179,8 @@ trait DataLoaderTrait
      * @return array
      */
 
-    protected static function orderManyPerKey(Collection $collection, $keys, $keyName) {
+    protected static function orderManyPerKey(Collection $collection, $keys, $keyName)
+    {
         $sorted = array_flip($keys);
 
         foreach ($keys as $key) {
@@ -203,7 +207,7 @@ trait DataLoaderTrait
         foreach ($keys as $key) {
             $sorted[$key] = $collection->where($keyName, $key)->first();
         }
-        
+
         return array_values($sorted);
     }
 
@@ -215,8 +219,9 @@ trait DataLoaderTrait
      * @return \Overblog\DataLoader\DataLoader
      */
 
-    protected static function createLoader($batchLoadFn, $keyName) {
-        return new DataLoader(function($keys) use ($batchLoadFn, $keyName) {
+    protected static function createLoader($batchLoadFn, $keyName)
+    {
+        return new DataLoader(function ($keys) use ($batchLoadFn, $keyName) {
             $collection = $batchLoadFn($keys);
 
             return self::$promiseAdapter->createFulfilled(self::orderManyPerKey($collection, $keys, $keyName));
