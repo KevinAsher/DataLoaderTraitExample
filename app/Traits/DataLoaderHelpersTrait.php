@@ -86,4 +86,51 @@ trait DataLoaderHelpersTrait
         }
     }
 
+    /**
+     * Monkey patch function. Function didn't exist in older versions of laravel 5.
+     * 
+     * @param  Illuminate\Database\Eloquent\Relations\BelongsToMany $relation
+     * @return string
+     */
+
+    private static function getForeignPivotKeyName(BelongsToMany $relation)
+    {
+        if (method_exists($relation, 'getForeignPivotKeyName')) {
+            return $relation->getForeignPivotKeyName();
+        } else {
+            return explode('.', $relation->getForeignKey())[1];
+        }
+    }
+
+    /**
+     * Monkey patch function. Function didn't exist in older versions of laravel 5.
+     * 
+     * @param  Illuminate\Database\Eloquent\Relations\BelongsToMany $relation
+     * @return string
+     */
+
+    private static function getQualifiedForeignPivotKeyName(BelongsToMany $relation)
+    {
+        if (method_exists($relation, 'getQualifiedForeignPivotKeyName')) {
+            return $relation->getQualifiedForeignPivotKeyName();
+        } else {
+            return $relation->getForeignKey();
+        }
+    }
+
+    /**
+     * Monkey patch function. Function didn't exist in older versions of laravel 5.
+     * 
+     * @param  Illuminate\Database\Eloquent\Relations\BelongsToMany $relation
+     * @return string
+     */
+
+    private static function getQualifiedRelatedPivotKeyName(BelongsToMany $relation)
+    {
+        if (method_exists($relation, 'getQualifiedRelatedPivotKeyName')) {
+            return $relation->getQualifiedRelatedPivotKeyName();
+        } else {
+            return $relation->getOtherKey();
+        }
+    }
 }

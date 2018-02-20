@@ -144,12 +144,12 @@ trait DataLoaderTrait
                         $collection = self::orderManyPerKey($collection, $keys, $keyName);
                         break;
                     case 'belongstomany':
-                        $keyName = $eloquentRelationship->getForeignPivotKeyName();
+                        $keyName = self::getForeignPivotKeyName($eloquentRelationship);
                         $pivotTable = $eloquentRelationship->getTable();
-                        $foreignPivotKey = $eloquentRelationship->getQualifiedForeignPivotKeyName();
-                        $relatedPivotKey = $eloquentRelationship->getQualifiedRelatedPivotKeyName();
+                        $foreignPivotKey = self::getQualifiedForeignPivotKeyName($eloquentRelationship);
+                        $relatedPivotKey = self::getQualifiedRelatedPivotKeyName($eloquentRelationship);
                         $relatedModelInstance = $eloquentRelationship->getRelated();
-                        $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), $relatedPivotKey)
+                        $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), '=', $relatedPivotKey)
                             ->whereIn($foreignPivotKey, $keys)->get();
                         $collection = self::orderManyPerKey($collection, $keys, $keyName);
 
