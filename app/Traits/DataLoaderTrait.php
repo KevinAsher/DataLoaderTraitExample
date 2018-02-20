@@ -21,14 +21,16 @@ trait DataLoaderTrait
     static public $dataLoader;
     static protected $promiseAdapter;
 
-    static private $LOAD = 'batchload';
-    static private $LOAD_MANY = 'batchloadmany';
+    // static private $LOAD = 'batchload';
+    // static private $LOAD_MANY = 'batchloadmany';
     static private $relationshipFnReturnTypeMap = [];
 
 
     /**
      * Handles calls to dynamic functions in the following format:
-     *   batch[LOAD_TYPE][DEFINED_ELOQUENT_RELATION_FUNCTION]
+     *   batchLoad[DEFINED_ELOQUENT_RELATION_FUNCTION]
+     *   or
+     *   batchLoad
      * 
      * Limitations: The DEFINED_ELOQUENT_RELATION_FUNCTION must specify the return type
      * Supported relation types:
@@ -42,26 +44,18 @@ trait DataLoaderTrait
     {
         $name = strtolower($name);
         $relationshipFnName = self::getRelationshipFnName($name);
-        $loadType = self::getLoadType($name);
 
+        if (empty($relationshipFnName)) {
+            
+            $keys = $this->getKeys($arguments);
+            return self::$dataLoader->{$this->getDataLoaderFnName($keys)}($keys);
 
-        if ($name == self::$LOAD || $name == self::$LOAD_MANY) {
-
-            $keys = $this->getKeys($arguments, $loadType);
-            return self::$dataLoader->{$this->getDataLoaderFnName($loadType)}($keys);
-
-        } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders)) && !empty($loadType)) {
-
+        } elseif (in_array($relationshipFnName, array_keys(self::$relationDataLoaders))) {
 
             $eloquentRelationship = self::$relationshipFnReturnTypeMap[$relationshipFnName];
-            $keys = $this->getKeys($arguments, $loadType, $eloquentRelationship);
+            $keys = $this->getKeys($arguments, $eloquentRelationship);
 
-            if ($eloquentRelationship instanceof BelongsTo) {
-                $key = $keys;
-                return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
-            }
-
-            $promise = self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($loadType)}($keys);
+            $promise = self::$relationDataLoaders[$relationshipFnName]->{$this->getDataLoaderFnName($keys)}($keys);
             if ($eloquentRelationship instanceof HasMany || $eloquentRelationship instanceof BelongsToMany) {
                 $promise = $promise->then(function ($collection) use ($eloquentRelationship) {
                     $collection = $collection[0];
@@ -134,6 +128,9 @@ trait DataLoaderTrait
 
             if ($eloquentRelationship && $relationName) {
                 switch ($relationName) {
+                    case 'belongsto':
+                        $key = $keys;
+                        return get_class($eloquentRelationship->getRelated())::$dataLoader->load($key);
                     case 'hasone':
                         $keyName = self::getForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();

@@ -22,38 +22,14 @@ trait DataLoaderHelpersTrait
 
     private static function getRelationshipFnName($name)
     {
-        $loadType = self::$LOAD_MANY;
-        $relationshipName = str_replace($loadType, '', $name);
-        if ($relationshipName == $name) {
-            $loadType = self::$LOAD;
-            $relationshipName = str_replace($loadType, '', $name);
-        }
-
-        return $relationshipName;
+        return str_replace('batchLoad', '', $name);
     }
 
-    private static function getLoadType($name)
-    {
-        if (strpos($name, self::$LOAD_MANY) !== false) {
-            return self::$LOAD_MANY;
-        } elseif (strpos($name, self::$LOAD) !== false) {
-            return self::$LOAD;
-        }
-
-        return null;
-    }
-
-
-    private function getKeys($arguments, $loadType, Relation $eloquentRelationship = null)
+    private function getKeys($arguments, Relation $eloquentRelationship = null)
     {
         if (empty($arguments)) {
             if ($eloquentRelationship instanceof HasMany) {
-                $keys = $this->getKey(); // why do we have this again
-
-                if ($loadType == self::$LOAD_MANY) {
-                    $keys = [$this->getKey()];
-                }
-
+                $keys = [$this->getKey()];
             } else if ($eloquentRelationship instanceof HasOne) {
                 $keys = $this->{self::getParentKeyName($eloquentRelationship)};
             } else if ($eloquentRelationship instanceof BelongsTo) {
@@ -67,9 +43,12 @@ trait DataLoaderHelpersTrait
         return $keys;
     }
 
-    private function getDataLoaderFnName($loadType)
+    private function getDataLoaderFnName($keys)
     {
-        return str_replace('batch', '', $loadType);
+        if (is_array($keys)) {
+            return 'loadMany';
+        }
+        return 'load';
     }
 
     /**
