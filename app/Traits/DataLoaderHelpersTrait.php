@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Graphql;
+namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
