@@ -5,10 +5,6 @@ namespace App\GraphQL\Type;
 use GraphQL\Type\Definition\Type;
 use Folklore\GraphQL\Support\Type as BaseType;
 use GraphQL;
-use Facades\App\DataLoader\AuthorLoader;
-use Facades\App\DataLoader\PostLikesCount;
-use Facades\App\DataLoader\PostLoader;
-use Facades\App\DataLoader\UserLoader;
 use App\Post;
 
 
