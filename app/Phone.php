@@ -10,6 +10,8 @@ class Phone extends Model
 {
     use DataLoaderTrait;
 
+    protected $guarded = [];
+
     public function user() : BelongsTo
     {
         return $this->belongsTo('App\User');

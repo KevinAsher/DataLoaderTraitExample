@@ -58,7 +58,11 @@ class UserType extends GraphQLType
 
     protected function resolveFollowersField($root, $args)
     {
-       return $root->batchLoadFollowers();
+        
+        
+        $result = $root->batchLoadFollowers();
+        
+        return $result;
     }
 
     protected function resolveFolloweesField($root, $args)
