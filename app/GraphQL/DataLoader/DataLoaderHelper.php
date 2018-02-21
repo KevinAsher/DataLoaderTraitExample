@@ -2,6 +2,9 @@
 
 namespace App\GraphQL\DataLoader;
 
+use Illuminate\Database\Eloquent\Collection;
+
+
 trait DataLoaderHelper
 {
     /**
@@ -15,7 +18,7 @@ trait DataLoaderHelper
      * @return array
      */
 
-    protected static function orderManyPerKey($collection, $keys, $keyName)
+    protected function orderManyPerKey(Collection $collection, $keys, $keyName)
     {
         $sorted = array_flip($keys);
 
@@ -29,8 +32,8 @@ trait DataLoaderHelper
             $sorted[$index][] = $item;
         }
 
-        foreach ($sorted as $key => $index) {
-            if (!is_array($item)) {
+        foreach ($sorted as $key => $item) {
+            if (is_numeric($item)) {
                 $sorted[$key] = [];
             }
         }
@@ -48,12 +51,19 @@ trait DataLoaderHelper
      * @return array
      */
 
-    protected static function orderOnePerKey(Collection $collection, $keys, $keyName)
+    protected function orderOnePerKey(Collection $collection, $keys, $keyName)
     {
         $sorted = array_flip($keys);
 
-        foreach ($keys as $key) {
-            $sorted[$key] = $collection->where($keyName, $key)->first();
+        foreach ($collection as $item) {
+            $index = $item->{$keyName};
+            $sorted[$index] = $item;
+        }
+
+        foreach ($sorted as $key => $item) {
+            if (is_numeric($item)) {
+                $sorted[$key] = [];
+            }
         }
 
         return array_values($sorted);

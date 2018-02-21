@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
-use App\Traits\DataLoaderTrait;
+use App\GraphQL\DataLoader\DataLoaderTrait;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Model

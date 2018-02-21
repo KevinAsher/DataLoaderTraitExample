@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Overblog\DataLoader\DataLoader;
 use Illuminate\Support\Facades\DB;
-use App\Traits\DataLoaderTrait;
+use App\GraphQL\DataLoader\DataLoaderTrait;
 
 class Post extends Model
 {
@@ -25,27 +25,27 @@ class Post extends Model
         return $this->hasMany('App\Like');
     }
 
-    protected static function boot() {
-        parent::boot();
+    // protected static function boot() {
+    //     parent::boot();
 
-        self::$relationDataLoaders['likescount'] = self::createLoader(function($keys) {
-            $collection = Like::selectRaw('post_id, COUNT(*) as likes')
-                                ->whereIn('post_id', $keys)
-                                ->groupBy('post_id')
-                                ->get();
+    //     self::$relationDataLoaders['likescount'] = self::createLoader(function($keys) {
+    //         $collection = Like::selectRaw('post_id, COUNT(*) as likes')
+    //                             ->whereIn('post_id', $keys)
+    //                             ->groupBy('post_id')
+    //                             ->get();
 
-            return $collection;
-        }, 'post_id');
-    }
+    //         return $collection;
+    //     }, 'post_id');
+    // }
 
-    public function batchLoadLikesCount() {
-        return self::$relationDataLoaders['likescount']->load($this->id)
-                    ->then(function($obj) { 
-                        $obj = firstOrNull($obj);
-                        if (!empty($obj)) {
-                            return $obj->likes;
-                        }
-                        return 0;
-                    });
-    }
+    // public function batchLoadLikesCount() {
+    //     return self::$relationDataLoaders['likescount']->load($this->id)
+    //                 ->then(function($obj) { 
+    //                     $obj = firstOrNull($obj);
+    //                     if (!empty($obj)) {
+    //                         return $obj->likes;
+    //                     }
+    //                     return 0;
+    //                 });
+    // }
 }

@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\DataLoaderTrait;
+use App\GraphQL\DataLoader\DataLoaderTrait;
 
 class Phone extends Model
 {

@@ -6,6 +6,11 @@ use \ReflectionMethod;
 use \ReflectionClass;
 use Overblog\DataLoader\DataLoader;
 use Overblog\PromiseAdapter\PromiseAdapterInterface;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DataLoaderManager
 {
@@ -29,45 +34,45 @@ class DataLoaderManager
     public function bootDataLoader($modelClassName, $methodName = null)
     {
         if ($methodName) {
-            $model = new $modelClassName;
+            $methodName = strtolower($methodName);
 
-            $reflectionMethod = new ReflectionMethod($modelClassName, $methodName);
-            if ($reflectionMethod->hasReturnType()) {
-
-                $fnRelationType = (new ReflectionClass($reflectionMethod->getReturnType()->getName()))->getShortName();
-                $fnRelationType = strtolower($fnRelationType);
-
-                if (!in_array($fnRelationType, $this->supportedRelations)) {
-                    throw new \Exception("Can't batch load models with ${fnRelationType} with model ${modelClassName}");
-                }
-
-                $eloquentRelationship = $reflectionMethod->invoke($model);
-                $methodName = strtolower($methodName);
-
-                $this->setRelationshipFnReturnType($methodName, $eloquentRelationship);
+            $eloquentRelationship = $this->getRelationshipFnReturnType($modelClassName, $methodName);
                 
-                $this->setDataLoader($modelClassName, $methodName, new DataLoader(
-                    $this->buildBatchLoadFn($eloquentRelationship, $fnRelationType), 
-                    $this->promiseAdapter
-                ));
+            $this->setDataLoader($modelClassName, $methodName, new DataLoader(
+                $this->buildBatchLoadFn($modelClassName, $eloquentRelationship), 
+                $this->promiseAdapter
+            ));
 
-                return $this->getDataLoader($modelClassName, $methodName);
-            } else {
-                throw new \Exception("method batchLoad${$method} in ${modelClassName} needs to specify a return type");
-            }
+            return $this->getDataLoader($modelClassName, $methodName);
         }
 
-        $this->setDataLoader($modelClassName, null, new DataLoader($this->buildBatchLoadFn(), $this->promiseAdapter));
-
+        $this->setDataLoader($modelClassName, null, new DataLoader($this->buildBatchLoadFn($modelClassName), $this->promiseAdapter));
         return $this->getDataLoader($modelClassName);
     }
 
-    public function getRelationshipFnReturnType($methodName) {
-        return $this->relationshipFnReturnTypeMap[$methodName];
-    }
+    public function getRelationshipFnReturnType($modelClassName, $methodName) {
+        if (isset($this->relationshipFnReturnTypeMap[$modelClassName][$methodName])) {
+            return $this->relationshipFnReturnTypeMap[$modelClassName][$methodName];            
+        }
 
-    public function setRelationshipFnReturnType($methodName, $eloquentRelationship) {
-        $this->relationshipFnReturnTypeMap[$methodName] = $eloquentRelationship;
+        $model = new $modelClassName;
+
+        $reflectionMethod = new ReflectionMethod($modelClassName, $methodName);
+        if ($reflectionMethod->hasReturnType()) {
+
+            $fnRelationType = (new ReflectionClass($reflectionMethod->getReturnType()->getName()))->getShortName();
+            $fnRelationType = strtolower($fnRelationType);
+
+            if (!in_array($fnRelationType, $this->supportedRelations)) {
+                throw new \Exception("Can't batch load models with ${fnRelationType} with model ${modelClassName}");
+            }
+
+            $this->relationshipFnReturnTypeMap[$modelClassName][$methodName] = $reflectionMethod->invoke($model);
+            
+            return $this->relationshipFnReturnTypeMap[$modelClassName][$methodName];
+        } else {
+            throw new \Exception("batch method on relationship {$method} in ${modelClassName} needs to specify a return type");
+        }
     }
 
     public function getDataLoader($modelClassName, $methodName = null) {
@@ -76,9 +81,8 @@ class DataLoaderManager
                 ? $this->relationDataLoaders[$modelClassName][$methodName]
                 : $this->bootDataLoader($modelClassName, $methodName);
         }
-
-        return isset($this->relationDataLoaders[$modelClassName])
-            ? $this->relationDataLoaders[$modelClassName]
+        return isset($this->modelDataLoaders[$modelClassName])
+            ? $this->modelDataLoaders[$modelClassName]
             : $this->bootDataLoader($modelClassName);
     }
 
@@ -98,27 +102,27 @@ class DataLoaderManager
      * @return \Closure   
      */
 
-    private static function buildBatchLoadFn(Relation $eloquentRelationship = null, $relationName = null)
+    protected function buildBatchLoadFn($modelClassName, Relation $eloquentRelationship = null)
     {
-        return function ($keys) use ($eloquentRelationship, $relationName) {
+        return function ($keys) use ($modelClassName, $eloquentRelationship) {
 
             $keyName = null;
 
-            if ($eloquentRelationship && $relationName) {
-                switch ($relationName) {
-                    case 'belongsto':
-                        return get_class($eloquentRelationship->getRelated())::$dataLoader->loadMany($keys);
-                    case 'hasone':
+            if ($eloquentRelationship) {
+                switch (true) {
+                    case $eloquentRelationship instanceof BelongsTo:
+                        return $this->getDataLoader(get_class($eloquentRelationship->getRelated()))->loadMany($keys);
+                    case $eloquentRelationship instanceof HasOne:
                         $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
-                        $collection = self::orderOnePerKey($collection, $keys, $keyName);
+                        $collection = $this->orderOnePerKey($collection, $keys, $keyName);
                         break;
-                    case 'hasmany':
+                    case $eloquentRelationship instanceof HasMany:
                         $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
-                        $collection = self::orderManyPerKey($collection, $keys, $keyName);
+                        $collection = $this->orderManyPerKey($collection, $keys, $keyName);
                         break;
-                    case 'belongstomany':
+                    case $eloquentRelationship instanceof BelongsToMany:
                         $keyName = self::getBelongsToManyForeignKey($eloquentRelationship);
                         $pivotTable = $eloquentRelationship->getTable();
                         $foreignPivotKey = self::getBelongsToManyQualifiedForeignPivotKeyName($eloquentRelationship);
@@ -128,20 +132,20 @@ class DataLoaderManager
                         $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), '=', $relatedPivotKey)
                             ->whereIn($foreignPivotKey, $keys)->get();
 
-                        $collection = self::orderManyPerKey($collection, $keys, $keyName);
-
+                        $collection = $this->orderManyPerKey($collection, $keys, $keyName);
+                        
                         break;
                     default:
-                        throw new \Exception("$relationName not supported", 1);
+                        throw new \Exception("relation " . get_class($eloquentRelationship) . " not supported", 1);
                         break;
                 }
             } else {
-                $collection = static::find($keys);
+                $collection = $modelClassName::find($keys);
                 $keyName = (!$collection->isEmpty()) ? $collection->first()->getKeyName() : null;
-                $collection = self::orderOnePerKey($collection, $keys, $keyName);
+                $collection = $this->orderOnePerKey($collection, $keys, $keyName);
             }
 
-            return self::$promiseAdapter->createFulfilled($collection);
+            return $this->promiseAdapter->createFulfilled($collection);
         };
     }
 }

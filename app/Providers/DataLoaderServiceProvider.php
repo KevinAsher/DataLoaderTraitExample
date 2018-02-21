@@ -12,13 +12,24 @@ use App\GraphQL\DataLoader\DataLoaderManager;
 class DataLoaderServiceProvider extends ServiceProvider
 {
     /**
+     * @var SyncPromiseAdapter
+     */
+    private $graphQLPromiseAdapter;
+    /**
+     * @var WebonyxGraphQLSyncPromiseAdapter
+     */
+    private $dataLoaderPromiseAdapter;
+
+    /**
      * Bootstrap any application services.
      *
      * @return void
      */
     public function boot()
     {
-        
+        $this->graphQLPromiseAdapter = new SyncPromiseAdapter();
+        $this->dataLoaderPromiseAdapter = new WebonyxGraphQLSyncPromiseAdapter($this->graphQLPromiseAdapter);
+        GraphQL::setPromiseAdapter($this->graphQLPromiseAdapter);
     }
 
     /**
@@ -29,13 +40,10 @@ class DataLoaderServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton(PromiseAdapterInterface::class, function () {
-            $graphQLPromiseAdapter = new SyncPromiseAdapter();
-            $dataLoaderPromiseAdapter = new WebonyxGraphQLSyncPromiseAdapter($graphQLPromiseAdapter);
-            GraphQL::setPromiseAdapter($graphQLPromiseAdapter);
-            return $dataLoaderPromiseAdapter;
+            $this->dataLoaderPromiseAdapter;
         });
-        $this->app->singleton('DataLoader', function($app) {
-            return new DataLoaderManager($app->make(PromiseAdapterInterface::class));
+        $this->app->singleton('DataLoader', function() {
+            return new DataLoaderManager($this->dataLoaderPromiseAdapter);
         });
     }
 }
