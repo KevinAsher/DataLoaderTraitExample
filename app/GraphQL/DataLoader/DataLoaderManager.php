@@ -27,6 +27,10 @@ class DataLoaderManager
         $this->promiseAdapter = $promiseAdapter;
     }
 
+    public function getPromiseAdapter() {
+        return $this->promiseAdapter;
+    }
+
     public function getSupportedRelations() {
         return $this->supportedRelations;
     }
@@ -79,11 +83,18 @@ class DataLoaderManager
         if ($methodName) {
             return isset($this->relationDataLoaders[$modelClassName][$methodName]) 
                 ? $this->relationDataLoaders[$modelClassName][$methodName]
-                : $this->bootDataLoader($modelClassName, $methodName);
+                : null;
         }
         return isset($this->modelDataLoaders[$modelClassName])
             ? $this->modelDataLoaders[$modelClassName]
-            : $this->bootDataLoader($modelClassName);
+            : null;
+    }
+
+    public function getDataLoaderAndBootIfDosentExist($modelClassName, $methodName = null) {
+        if ($methodName) {
+            return $this->getDataLoader($modelClassName, $methodName) ?: $this->bootDataLoader($modelClassName, $methodName);
+        }
+        return $this->getDataLoader($modelClassName) ? : $this->bootDataLoader($modelClassName);        
     }
 
     public function setDataLoader($modelClassName, $methodName = null, DataLoader $dataLoader) {

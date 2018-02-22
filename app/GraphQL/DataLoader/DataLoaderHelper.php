@@ -18,7 +18,7 @@ trait DataLoaderHelper
      * @return array
      */
 
-    protected function orderManyPerKey(Collection $collection, $keys, $keyName)
+    public function orderManyPerKey(Collection $collection, $keys, $keyName)
     {
         $sorted = array_flip($keys);
 
@@ -51,7 +51,7 @@ trait DataLoaderHelper
      * @return array
      */
 
-    protected function orderOnePerKey(Collection $collection, $keys, $keyName)
+    public function orderOnePerKey(Collection $collection, $keys, $keyName)
     {
         $sorted = array_flip($keys);
 

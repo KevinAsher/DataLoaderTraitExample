@@ -25,27 +25,20 @@ class Post extends Model
         return $this->hasMany('App\Like');
     }
 
-    // protected static function boot() {
-    //     parent::boot();
+    public function batchLoadLikes() {
+        return $this->createDataLoaderOnce('likescount', 'post_id', function ($keys) {
+            $collection = Like::selectRaw('post_id, COUNT(*) as likes')
+                                ->whereIn('post_id', $keys)
+                                ->groupBy('post_id')
+                                ->get();
 
-    //     self::$relationDataLoaders['likescount'] = self::createLoader(function($keys) {
-    //         $collection = Like::selectRaw('post_id, COUNT(*) as likes')
-    //                             ->whereIn('post_id', $keys)
-    //                             ->groupBy('post_id')
-    //                             ->get();
-
-    //         return $collection;
-    //     }, 'post_id');
-    // }
-
-    // public function batchLoadLikesCount() {
-    //     return self::$relationDataLoaders['likescount']->load($this->id)
-    //                 ->then(function($obj) { 
-    //                     $obj = firstOrNull($obj);
-    //                     if (!empty($obj)) {
-    //                         return $obj->likes;
-    //                     }
-    //                     return 0;
-    //                 });
-    // }
+            return $collection;
+        })->load($this->id)->then(function($obj) {
+            $obj = firstOrNull($obj);
+            if (!empty($obj)) {
+                return $obj->likes;
+            }
+            return 0;
+        });
+    }
 }

@@ -34,6 +34,6 @@ class PostType extends BaseType
 
     protected function resolveLikesField($root, $args)
     {
-        return $root->batchLoadLikesCount();
+        return $root->batchLoadLikes();
     }
 }
