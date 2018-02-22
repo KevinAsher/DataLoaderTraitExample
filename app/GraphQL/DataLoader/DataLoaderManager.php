@@ -122,7 +122,7 @@ class DataLoaderManager
             if ($eloquentRelationship) {
                 switch (true) {
                     case $eloquentRelationship instanceof BelongsTo:
-                        return $this->getDataLoader(get_class($eloquentRelationship->getRelated()))->loadMany($keys);
+                        return $this->getDataLoaderAndBootIfDosentExist(get_class($eloquentRelationship->getRelated()))->loadMany($keys);
                     case $eloquentRelationship instanceof HasOne:
                         $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
                         $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
