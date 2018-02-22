@@ -168,11 +168,11 @@ return [
          * Package Service Providers...
          */
 
+        App\Providers\DataLoaderServiceProvider::class, // future package?         
         /*
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
-        App\Providers\DataLoaderServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,

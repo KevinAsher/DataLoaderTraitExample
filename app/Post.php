@@ -5,7 +5,6 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Overblog\DataLoader\DataLoader;
 use Illuminate\Support\Facades\DB;
 use App\GraphQL\DataLoader\DataLoaderTrait;
 

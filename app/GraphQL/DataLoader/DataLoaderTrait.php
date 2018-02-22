@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Overblog\DataLoader\DataLoader;
 
+
 trait DataLoaderTrait { 
     use EloquentRelationHelper;
 
@@ -119,7 +120,6 @@ trait DataLoaderTrait {
 
         if (!$dataLoader) {
             $promiseAdapter = app('DataLoader')->getPromiseAdapter();
-            
             $dataLoader = new DataLoader(function ($keys) use ($batchLoadFn, $keyName, $promiseAdapter) {
                 $collection = $batchLoadFn($keys);
 
