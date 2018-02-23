@@ -34,7 +34,7 @@ trait DataLoaderHelper
 
         foreach ($sorted as $key => $item) {
             if (is_numeric($item)) {
-                $sorted[$key] = null;
+                $sorted[$key] = [];
             }
         }
 
