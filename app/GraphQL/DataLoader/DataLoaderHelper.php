@@ -13,7 +13,7 @@ trait DataLoaderHelper
      * the same order of the $keys parameter.
      * 
      * @param  \Illuminate\Support\Collection  $collection 
-     * @param  array  s$keys
+     * @param  array  $keys
      * @param  string  $keyName
      * @return array
      */
@@ -34,7 +34,7 @@ trait DataLoaderHelper
 
         foreach ($sorted as $key => $item) {
             if (is_numeric($item)) {
-                $sorted[$key] = [];
+                $sorted[$key] = null;
             }
         }
 
@@ -46,7 +46,7 @@ trait DataLoaderHelper
      * to the $keyname of each item. The returned array order is in the same order of the $keys parameter.
      * 
      * @param  \Illuminate\Support\Collection  $collection 
-     * @param  array  s$keys
+     * @param  array  $keys
      * @param  string  $keyName
      * @return array
      */
@@ -62,7 +62,7 @@ trait DataLoaderHelper
 
         foreach ($sorted as $key => $item) {
             if (is_numeric($item)) {
-                $sorted[$key] = [];
+                $sorted[$key] = null;
             }
         }
 
