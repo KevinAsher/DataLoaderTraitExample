@@ -11,12 +11,18 @@ use App\GraphQL\DataLoader\DataLoaderManager;
 
 class DataLoaderServiceProvider extends ServiceProvider
 {
+    protected $dataLoaderPromiseAdapter;
+
     /**
-     * Indicates if loading of the provider is deferred.
+     * Bootstrap any application services.
      *
-     * @var bool
+     * @return void
      */
-    protected $defer = true;
+    public function boot() {
+        $graphQLPromiseAdapter = new SyncPromiseAdapter();
+        $this->dataLoaderPromiseAdapter = new WebonyxGraphQLSyncPromiseAdapter($graphQLPromiseAdapter);
+        GraphQL::setPromiseAdapter($graphQLPromiseAdapter);
+    }
 
     /**
      * Register any application services.
@@ -25,26 +31,8 @@ class DataLoaderServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $graphQLPromiseAdapter = new SyncPromiseAdapter();
-        GraphQL::setPromiseAdapter($graphQLPromiseAdapter);
-        $this->app->singleton(PromiseAdapterInterface::class, function () use ($graphQLPromiseAdapter) {
-            return new WebonyxGraphQLSyncPromiseAdapter($graphQLPromiseAdapter);
+        $this->app->singleton(DataLoaderManager::class, function() {           
+            return new DataLoaderManager($this->dataLoaderPromiseAdapter);
         });
-        $this->app->singleton('DataLoader', function($app) {
-            return new DataLoaderManager($app->make(PromiseAdapterInterface::class));
-        });
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [
-            WebonyxGraphQLSyncPromiseAdapter::class,
-            DataLoaderManager::class
-        ];
     }
 }

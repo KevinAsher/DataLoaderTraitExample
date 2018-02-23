@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Overblog\DataLoader\DataLoader;
-
+use App\GraphQL\DataLoader\DataLoaderManager;
 
 trait DataLoaderTrait { 
     use EloquentRelationHelper;
@@ -39,17 +39,17 @@ trait DataLoaderTrait {
             if (empty($relationshipFnName)) {
                 $keys = $this->getKeysForDataLoader($arguments);
 
-                return app('DataLoader')->getDataLoaderAndBootIfDosentExist(self::class)->{self::getDataLoaderFnName($keys)}($keys);
+                return app(DataLoaderManager::class)->getDataLoaderAndBootIfDosentExist(self::class)->{self::getDataLoaderFnName($keys)}($keys);
 
             } else {
-                $eloquentRelationship = app('DataLoader')->getRelationshipFnReturnType(self::class, $relationshipFnName);
+                $eloquentRelationship = app(DataLoaderManager::class)->getRelationshipFnReturnType(self::class, $relationshipFnName);
                 $keys = $this->getKeysForDataLoader($arguments, $eloquentRelationship);
-                $promise = app('DataLoader')->getDataLoaderAndBootIfDosentExist(self::class, $relationshipFnName)->{self::getDataLoaderFnName($keys)}($keys);
+                $promise = app(DataLoaderManager::class)->getDataLoaderAndBootIfDosentExist(self::class, $relationshipFnName)->{self::getDataLoaderFnName($keys)}($keys);
                 if ($eloquentRelationship instanceof HasMany || $eloquentRelationship instanceof BelongsToMany) {
                     $promise = $promise->then(function ($collection) use ($eloquentRelationship) {
                         $collection = $collection[0];
                         $relatedModelInstance = $eloquentRelationship->getRelated();
-                        $relatedModelDataLoader = app('DataLoader')->getDataLoaderAndBootIfDosentExist(get_class($relatedModelInstance));
+                        $relatedModelDataLoader = app(DataLoaderManager::class)->getDataLoaderAndBootIfDosentExist(get_class($relatedModelInstance));
 
                     /* Precache all the models. The collection order must be in the same order of the $keys array. */
                         foreach ($collection as $model) {
@@ -116,17 +116,17 @@ trait DataLoaderTrait {
 
     public function createDataLoaderOnce($name, $keyName, $batchLoadFn)
     {
-        $dataLoader = app('DataLoader')->getDataLoader(self::class, $name);
+        $dataLoader = app(DataLoaderManager::class)->getDataLoader(self::class, $name);
 
         if (!$dataLoader) {
-            $promiseAdapter = app('DataLoader')->getPromiseAdapter();
+            $promiseAdapter = app(DataLoaderManager::class)->getPromiseAdapter();
             $dataLoader = new DataLoader(function ($keys) use ($batchLoadFn, $keyName, $promiseAdapter) {
                 $collection = $batchLoadFn($keys);
 
-                return $promiseAdapter->createFulfilled(app('DataLoader')->orderManyPerKey($collection, $keys, $keyName));
+                return $promiseAdapter->createFulfilled(app(DataLoaderManager::class)->orderManyPerKey($collection, $keys, $keyName));
             }, $promiseAdapter);
 
-            app('DataLoader')->setDataLoader(self::class, $name, $dataLoader);
+            app(DataLoaderManager::class)->setDataLoader(self::class, $name, $dataLoader);
         }
         
         return $dataLoader;
