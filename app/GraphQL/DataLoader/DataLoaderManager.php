@@ -68,14 +68,14 @@ class DataLoaderManager
             $fnRelationType = strtolower($fnRelationType);
 
             if (!in_array($fnRelationType, $this->supportedRelations)) {
-                throw new \Exception("Can't batch load models with ${fnRelationType} with model ${modelClassName}");
+                throw new \Exception("Can't batch load models with $fnRelationType with model $modelClassName");
             }
 
             $this->relationshipFnReturnTypeMap[$modelClassName][$methodName] = $reflectionMethod->invoke($model);
             
             return $this->relationshipFnReturnTypeMap[$modelClassName][$methodName];
         } else {
-            throw new \Exception("batch method on relationship {$method} in ${modelClassName} needs to specify a return type");
+            throw new \Exception("batch method on relationship $methodName in $modelClassName needs to specify a return type");
         }
     }
 
