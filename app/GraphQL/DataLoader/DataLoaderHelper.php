@@ -23,7 +23,11 @@ trait DataLoaderHelper
         $sorted = array_flip($keys);
 
         foreach ($collection as $item) {
-            $index = $item->{$keyName};
+            if (isset($item->pivot)) {
+                $index = $item->pivot->{$keyName};                
+            } else {
+                $index = $item->{$keyName};                
+            }
 
             if (!is_array($sorted[$index])) {
                 $sorted[$index] = [];

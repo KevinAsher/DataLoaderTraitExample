@@ -29,6 +29,23 @@ trait EloquentRelationHelper
     }
 
     /**
+     * Wrapper function. From laravel 5.3 to 5.4, a function was renamed.
+     * 
+     * @param  Illuminate\Database\Eloquent\Relations\BelongsTo $relation
+     * @return string
+     */
+
+    private static function getBelongsToParentKeyName(BelongsTo $relation)
+    {
+        if (method_exists($relation, 'getOwnerKey')) {
+            // laravel 5.4+
+            return $relation->getOwnerKey();
+        }
+        // laravel 5.2 - 5.3
+        return $relation->getOtherKey();
+    }
+
+    /**
      * Monkey patch function. Function didn't exist in older versions of laravel 5.
      * 
      * @param  Illuminate\Database\Eloquent\Relations\BelongsToMany $relation

@@ -79,6 +79,22 @@ class DataLoaderManager
         }
     }
 
+    public function clearRelationshipInitialConstraints($eloquentRelationship) {
+        $builder = $eloquentRelationship->getQuery()->getQuery();
+        switch(true) {
+            case $eloquentRelationship instanceof BelongsTo:
+            case $eloquentRelationship instanceof BelongsToMany:            
+                $builder->wheres = array_slice($builder->wheres, 2);
+                break;
+            case $eloquentRelationship instanceof HasOne:
+            case $eloquentRelationship instanceof HasMany:
+                $builder->wheres = array_slice($builder->wheres, 3);
+                break;
+        }
+
+        return $eloquentRelationship;
+    }
+
     public function getDataLoader($modelClassName, $methodName = null) {
         if ($methodName) {
             return isset($this->relationDataLoaders[$modelClassName][$methodName]) 
@@ -120,28 +136,34 @@ class DataLoaderManager
             $keyName = null;
 
             if ($eloquentRelationship) {
+                $eloquentRelationship = $this->clearRelationshipInitialConstraints($eloquentRelationship);
                 switch (true) {
                     case $eloquentRelationship instanceof BelongsTo:
-                        return $this->getDataLoaderAndBootIfDosentExist(get_class($eloquentRelationship->getRelated()))->loadMany($keys);
+                        $keyName = self::getBelongsToParentKeyName($eloquentRelationship);
+                        $collection = $eloquentRelationship->whereIn($keyName, $keys)->get();
+                        $modelDataLoader = $this->getDataLoaderAndBootIfDosentExist(get_class($eloquentRelationship->getRelated()));                        
+                        $collection->each(function ($model) use ($modelDataLoader) {
+                            $modelDataLoader->prime($model->getKey(), $model);
+                        });
+                        $collection = $this->orderOnePerKey($collection, $keys, $keyName);
+                        
+                        return $modelDataLoader->loadMany($keys);
+
                     case $eloquentRelationship instanceof HasOne:
                         $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
-                        $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
+                        $collection = $eloquentRelationship->whereIn($keyName, $keys)->get();
                         $collection = $this->orderOnePerKey($collection, $keys, $keyName);
                         break;
                     case $eloquentRelationship instanceof HasMany:
                         $keyName = self::getHasOneOrManyForeignKeyName($eloquentRelationship);
-                        $collection = get_class($eloquentRelationship->getRelated())::whereIn($keyName, $keys)->get();
+                        $collection = $eloquentRelationship->whereIn($keyName, $keys)->get();
                         $collection = $this->orderManyPerKey($collection, $keys, $keyName);
                         break;
                     case $eloquentRelationship instanceof BelongsToMany:
                         $keyName = self::getBelongsToManyForeignKey($eloquentRelationship);
-                        $pivotTable = $eloquentRelationship->getTable();
                         $foreignPivotKey = self::getBelongsToManyQualifiedForeignPivotKeyName($eloquentRelationship);
-                        $relatedPivotKey = self::getBelongsToManyQualifiedRelatedPivotKeyName($eloquentRelationship);
-                        $relatedModelInstance = $eloquentRelationship->getRelated();
 
-                        $collection = get_class($relatedModelInstance)::join($pivotTable, $relatedModelInstance->getQualifiedKeyName(), '=', $relatedPivotKey)
-                            ->whereIn($foreignPivotKey, $keys)->get();
+                        $collection = $eloquentRelationship->whereIn($foreignPivotKey, $keys)->get();                        
 
                         $collection = $this->orderManyPerKey($collection, $keys, $keyName);
                         
